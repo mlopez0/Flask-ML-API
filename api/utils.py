@@ -18,7 +18,11 @@ def allowed_file(filename):
     bool
         True if the file is an image, False otherwise.
     """
-    # TODO
+    # TODO ✅
+    ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
     raise NotImplementedError
 
 
