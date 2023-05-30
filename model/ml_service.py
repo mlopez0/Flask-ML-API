@@ -5,7 +5,7 @@ import time
 import numpy as np
 import redis
 import settings
-import settings.py
+#import settings.py
 from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.applications.resnet50 import decode_predictions, preprocess_input
 from tensorflow.keras.preprocessing import image
