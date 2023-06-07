@@ -46,7 +46,7 @@ def predict(image_list):
     class_name = None
     pred_probability = None
 
-    # TODO ⏳
+    # TODO ✅
     # We need to convert the PIL image to a Numpy
     # array before sending it to the model
 
@@ -54,7 +54,7 @@ def predict(image_list):
 
     for number, image_name in enumerate(image_list, start=0):
         img = image.load_img(
-            f"{settings.IMAGE_FOLDER}/{image_name}", target_size=(224, 224)
+            f"{settings.UPLOAD_FOLDER}/{image_name}", target_size=(224, 224)
         )
 
         x = image.img_to_array(img)
@@ -71,14 +71,15 @@ def predict(image_list):
 
     predictions_decoded = decode_predictions(predictions, top=1)
 
-    class_name, pred_probability = []
+    class_name_list = []
+    pred_probability_list = []
 
     for prediction in predictions_decoded:
         _, class_name, pred_probability = prediction[0]
-        class_name.append(class_name)
-        pred_probability.append(round(pred_probability, 4))
+        class_name_list.append(class_name)
+        pred_probability_list.append(round(pred_probability, 4))
 
-    return class_name, pred_probability
+    return class_name_list, pred_probability_list
 
 
 def classify_process():
@@ -108,7 +109,8 @@ def classify_process():
         #       code with Redis making use of functions `brpop()` and `set()`.
         # TODO ✅
         # Take a new job from Redis
-        job = db.brpop(settings.REDIS_QUEUE, count=20)
+        # Checking the queue with name settings.REDIS_QUEUE
+        data = db.rpop(settings.REDIS_QUEUE, count=20)
 
         # Converting the JSON from job_data to a Dict
         if data:

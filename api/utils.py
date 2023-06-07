@@ -19,14 +19,15 @@ def allowed_file(filename):
         True if the file is an image, False otherwise.
     """
     # TODO ✅
-    ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+    ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif"}
 
     file_extension = os.path.splitext(filename)[-1].lower()
 
-    if file_extension not in ALLOWED_EXTENSIONS:
-        return False
-    else:
+    if file_extension in ALLOWED_EXTENSIONS:
         return True
+    else:
+        return False
+
 
 def get_file_hash(file):
     """
