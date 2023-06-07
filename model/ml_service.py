@@ -25,7 +25,7 @@ db = redis.Redis(
 # for more information about how to use this model.
 #model = None
 
-model = resnet50.ResNet50(include_top=True, weights="imagenet")
+model = ResNet50(include_top=True, weights="imagenet")
 model.summary()
 
 
@@ -102,7 +102,6 @@ def classify_process():
         # Hint: You should be able to successfully implement the communication
         #       code with Redis making use of functions `brpop()` and `set()`.
         # TODO 🤷🏻‍♂️⏳
-        
         # Take a new job from Redis
         job = db.brpop(settings.REDIS_QUEUE)
 
