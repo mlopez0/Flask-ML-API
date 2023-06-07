@@ -6,14 +6,24 @@ ARG GID
 # Add a non-root user
 RUN addgroup --gid $GID app
 RUN adduser --disabled-login --geco '' --uid $UID --gid $GID app
-USER app
+RUN mkdir -p ./src/feedback ./src/static/uploads
+RUN touch ./src/feedback/feedback
+
 
 # Append /home/app/.local/bin/ to PATH variable because
 # gunicorn is installed there.
-ENV PYTHONPATH=$PYTHONPATH:/src/
-ENV PATH=$PATH:/home/app/.local/bin/
+ENV PYTHONPATH=$PYTHONPATH:/src
+ENV PATH=$PATH:/home/app/.local/bin
 
 COPY ./ /src
+
+#Changing directory permissions and ownership
+RUN chown -R app:app /src
+RUN chmod u+rw,g=r -R /src
+
+
+##Changing user APP location to avoid permissions erros
+USER app
 
 WORKDIR /src
 
