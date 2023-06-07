@@ -20,11 +20,13 @@ def allowed_file(filename):
     """
     # TODO ✅
     ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
+    file_extension = os.path.splitext(filename)[-1].lower()
 
-    raise NotImplementedError
-
+    if file_extension not in ALLOWED_EXTENSIONS:
+        return False
+    else:
+        return True
 
 def get_file_hash(file):
     """

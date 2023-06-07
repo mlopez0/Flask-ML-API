@@ -5,7 +5,8 @@ import time
 import numpy as np
 import redis
 import settings
-#import settings.py
+
+# import settings.py
 from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.applications.resnet50 import decode_predictions, preprocess_input
 from tensorflow.keras.preprocessing import image
@@ -14,22 +15,19 @@ from tensorflow.keras.preprocessing import image
 # Connect to Redis and assign to variable `db``
 # Make use of settings.py module to get Redis settings like host, port, etc.
 db = redis.Redis(
-    host=settings.REDIS_IP, 
-    port=settings.REDIS_PORT,
-    db=settings.REDIS_DB_ID
-    )
+    host=settings.REDIS_IP, port=settings.REDIS_PORT, db=settings.REDIS_DB_ID
+)
 
 # TODO ✅
 # Load your ML model and assign to variable `model`
 # See https://drive.google.com/file/d/1ADuBSE4z2ZVIdn66YDSwxKv-58U7WEOn/view?usp=sharing
 # for more information about how to use this model.
-#model = None
+# model = None
 
 model = ResNet50(include_top=True, weights="imagenet")
-model.summary()
 
 
-def predict(image_name):
+def predict(image_list):
     """
     Load image from the corresponding folder based on the image name
     received, then, run our ML model to get predictions.
@@ -49,29 +47,36 @@ def predict(image_name):
     pred_probability = None
 
     # TODO ⏳
-    img = image.load_img(os.path.join(settings.UPLOAD_FOLDER, image_name), target_size=(224, 224))
-    # We need to convert the PIL image to a Numpy
+    # We need to convert the PIL image to a Numpy
     # array before sending it to the model
-    x = image.img_to_array(img)
-    x.shape
+
+    img_array = np.zeros((len(image_list), 224, 224, 3))
+
+    for number, image_name in enumerate(image_list, start=0):
+        img = image.load_img(
+            f"{settings.IMAGE_FOLDER}/{image_name}", target_size=(224, 224)
+        )
+
+        x = image.img_to_array(img)
+        img_array[number] = x
 
     # Also we must add an extra dimension to this array
     # because our model is expecting as input a batch of images.
     # In this particular case, we will have a batch with a single
     # image inside
-    x_batch = np.expand_dims(x, axis=0)
-    x_batch.shape
-
-    # Now we must scale pixels values
-    x_batch = ResNet50.preprocess_input(x_batch)
+    x_batch = preprocess_input(img_array)
 
     # Run model on batch of images
     predictions = model.predict(x_batch)
 
-    #  Decode predictions
-    res=ResNet50.decode_predictions(predictions, top=1)
+    predictions_decoded = decode_predictions(predictions, top=1)
 
-    class_name, pred_probability = res[0][0] # ⚠️
+    class_name, pred_probability = []
+
+    for prediction in predictions_decoded:
+        _, class_name, pred_probability = prediction[0]
+        class_name.append(class_name)
+        pred_probability.append(round(pred_probability, 4))
 
     return class_name, pred_probability
 
@@ -101,19 +106,49 @@ def classify_process():
         #      sent
         # Hint: You should be able to successfully implement the communication
         #       code with Redis making use of functions `brpop()` and `set()`.
-        # TODO 🤷🏻‍♂️⏳
+        # TODO ✅
         # Take a new job from Redis
-        job = db.brpop(settings.REDIS_QUEUE)
+        job = db.brpop(settings.REDIS_QUEUE, count=20)
 
-        # Parse job data
-        job_data = json.loads(job[1].decode("utf-8"))
-        job_id = job_data["id"]
-        image_name = job_data["image_name"]
-        predict = predict(image_name)
+        # Converting the JSON from job_data to a Dict
+        if data:
+            jobid_list = []
+            jobimg_list = []
 
-        # Store model prediction in a dict
-        output = {"prediction": predict[0], "score": predict[1]}
-        
+            # Creates a list of jobs and its names
+            for job in data:
+                # Loads data as dict
+                msg = json.loads(job)
+
+                # If both exists, then predict
+
+                image_name, job_id = msg["image_name"], msg["id"]
+                if (image_name, job_id) is not None:
+                    jobid_list.append(job_id)
+                    jobimg_list.append(image_name)
+
+                else:
+                    print("Something went wrong with one job id, please try again")
+                # Sending results to redis hashtable
+
+            if len(jobimg_list) > 0:
+                class_pred_list, pred_proba_list = predict(jobimg_list)
+
+                ##Send back inidvidual jobs to hash table
+                for class_name, pred_probability, job_id in zip(
+                    class_pred_list, pred_proba_list, jobid_list
+                ):
+                    msg_content = {
+                        "prediction": class_name,
+                        "score": eval(str(pred_probability)),
+                    }
+
+                    # Turning msg content into a JSON
+                    prediction_content = json.dumps(msg_content)
+
+                    # Sending the message
+                    db.set(job_id, prediction_content)
+
         # Sleep for a bit
         time.sleep(settings.SERVER_SLEEP)
 

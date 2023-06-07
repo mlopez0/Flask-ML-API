@@ -145,14 +145,20 @@ def feedback():
           incorrect.
         - "score" model confidence score for the predicted class as float.
     """
-    report = request.form.get("report")
+    # report = request.form.get("report")
 
     # Store the reported data to a file on the corresponding path
     # already provided in settings.py module (settings.FEEDBACK_FILEPATH)
     # TODO ✅
+
+    report = None
+
+    if request.method == "POST":
+        report = request.form.get("report")
+
     if report:
         with open(settings.FEEDBACK_FILEPATH, "a") as f:
-            f.write(report)
-        
+            f.write(str(report + "\n"))
+
     # Don't change this line
     return render_template("index.html")
